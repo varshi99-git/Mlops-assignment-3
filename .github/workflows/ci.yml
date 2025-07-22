@@ -1,0 +1,36 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build_and_test_container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Train model
+        run: python train.py
+
+      - name: Build Docker image
+        run: docker build -t your-dockerhub-username/california-housing:latest .
+
+      - name: Run predictions in Docker
+        run: docker run --rm your-dockerhub-username/california-housing python predict.py
+
+      - name: Log in to DockerHub
+        env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+      - name: Push image to Docker Hub
+        run: docker push your-dockerhub-username/california-housing:latest
